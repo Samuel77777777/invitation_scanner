@@ -114,7 +114,7 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
 
   // Search in the database based on the key and perform verification
   Future<void> _searchInDatabase(String scannedKey) async {
-    // Show a loading indicator (if needed)
+
 
     try {
       print('Searching in database for Key: $scannedKey');
@@ -129,7 +129,7 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
 
       print('API Response: ${getInviteResponse.statusCode}');
 
-      // Hide the loading indicator (if needed)
+   
 
       if (getInviteResponse.statusCode == 200) {
         // Parse the response JSON
@@ -142,8 +142,6 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
         if (inviteData.containsKey('verified') && !inviteData['verified']) {
           // If the key is not used, show the success message
           _showSnackBar('Success: Key verified successfully', Colors.green);
-
-          // Optionally, you can perform additional actions here if needed
 
           // For example, update the verification status in the database
           await _updateVerifiedStatus(scannedKey);
