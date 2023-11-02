@@ -27,31 +27,6 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
     const int timeoutDuration = 30;
     // Start the timer for scanning timeout
     _timeoutTimer = Timer(Duration(seconds: timeoutDuration), _handleTimeout);
-
-    // Listen to the scannedDataStream for incoming QR code data
-    controller.scannedDataStream.listen((scanData) async {
-      print('Scanned Data Stream: $scanData');
-
-      // Extract the key from the scanned data
-      String scannedKey = extractKeyFromLink(scanData as String);
-
-      // Check if the scanned key is empty
-      if (scannedKey.isNotEmpty) {
-        // Store the scanned key in a variable
-        String scannedKeyVariable = scannedKey;
-
-        // Stop the scanning animation
-        setState(() {
-          isScanning = false;
-        });
-
-        // Search in the database based on the key and perform verification
-        await _searchInDatabase(scannedKeyVariable);
-
-        // Reset the scan for a new QR code
-        _resetScan();
-      }
-    });
   }
 
   @override
@@ -89,33 +64,35 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
     );
   }
 
-
   // Callback when the QRView widget is created
   void _onQRViewCreated(QRViewController controller) {
     print('QRView created');
     this.controller = controller;
-  }
 
-  // Handle the scanned QR code data
-  void _handleScannedData(String scanData) async {
-    print('Scanned Data: $scanData');
+    // Listen to the scannedDataStream for incoming QR code data
+    controller.scannedDataStream.listen((scanData) async {
+      print('Scanned Data Stream: $scanData');
 
-    // Extract the key from the scanned link.
-    String key = extractKeyFromLink(scanData);
+      // Extract the key from the scanned data
+      String scannedKey = extractKeyFromLink(scanData as String);
 
-    // Make a GET request to the API endpoint with the key as a parameter.
-    final getInviteResponse = await http
-        .get(Uri.parse('https://invites.onrender.com/api/invites/$key'));
+      // Check if the scanned key is empty
+      if (scannedKey.isNotEmpty) {
+        // Store the scanned key in a variable
+        String scannedKeyVariable = scannedKey;
 
-    // Parse the JSON response from the API endpoint to check if the key is used or not.
-    final Map<String, dynamic> inviteData = json.decode(getInviteResponse.body);
+        // Stop the scanning animation
+        setState(() {
+          isScanning = false;
+        });
 
-    // Display the result to the user.
-    if (inviteData.containsKey('verified') && inviteData['verified'] == true) {
-      _showSnackBar('Error: Invite has already been verified', Colors.red);
-    } else {
-      _showSnackBar('Success: Invite verified successfully', Colors.green);
-    }
+        // Search in the database based on the key and perform verification
+        await _searchInDatabase(scannedKeyVariable);
+
+        // Reset the scan for a new QR code
+        _resetScan();
+      }
+    });
   }
 
   // Extract the key from the scanned link
@@ -161,8 +138,19 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
 
         print('Invite Data: $inviteData');
 
-        // Perform additional actions based on the invite data
-        // ...
+        // Check if the key is not used (modify this condition based on your application logic)
+        if (inviteData.containsKey('verified') && !inviteData['verified']) {
+          // If the key is not used, show the success message
+          _showSnackBar('Success: Key verified successfully', Colors.green);
+
+          // Optionally, you can perform additional actions here if needed
+
+          // For example, update the verification status in the database
+          await _updateVerifiedStatus(scannedKey);
+        } else {
+          // If the key is already used, reset the scan
+          _resetScan();
+        }
       } else {
         // If the database search fails, reset the scan
         _resetScan();
